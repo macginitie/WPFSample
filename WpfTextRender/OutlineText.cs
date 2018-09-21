@@ -54,8 +54,6 @@ namespace WpfTextRender
         }
 
         static Geometry _textGeometry;
-        static Geometry _textHighLightGeometry;
-        static bool _highlight = true;
 
         /// <summary>
         /// Create the outline geometry based on the formatted text.
@@ -86,12 +84,6 @@ namespace WpfTextRender
 
             // Build the geometry object that represents the text.
             _textGeometry = formattedText.BuildGeometry(new System.Windows.Point(0, 0));
-
-            // Build the geometry object that represents the text hightlight.
-            if (_highlight)
-            {
-                _textHighLightGeometry = formattedText.BuildHighlightGeometry(new System.Windows.Point(0, 0));
-            }
         }
 
         /// <summary>
@@ -100,18 +92,15 @@ namespace WpfTextRender
         /// <param name="drawingContext">Drawing context of the OutlineText control.</param>
         protected override void OnRender(DrawingContext drawingContext)
         {
-            Brush Stroke = new SolidColorBrush(Color.FromRgb(0xff, 0x00, 0x00));
+            Brush Stroke = new SolidColorBrush(Color.FromRgb(0x00, 0x00, 0x00));
             Brush Fill = new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));
-            double StrokeThickness = 2.0;
-
-            // Draw the outline based on the properties that are set.
+            double StrokeThickness = 20.0;
+            // Draw the black outline based on the properties that are set.
             drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(Stroke, StrokeThickness), _textGeometry);
-
-            // Draw the text highlight based on the properties that are set.
-            if (_highlight)
-            {
-                drawingContext.DrawGeometry(null, new System.Windows.Media.Pen(Stroke, StrokeThickness), _textHighLightGeometry);
-            }
+            StrokeThickness /= 4.0;
+            Stroke = new SolidColorBrush(Color.FromRgb(0xff, 0x00, 0x00));
+            // Draw the red outline based on the properties that are set.
+            drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(Stroke, StrokeThickness), _textGeometry);
         }
     }
 }
