@@ -5,10 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfTextRender"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400" Width="500">
+        Title="MainWindow" Height="500" Width="600">
     <Grid>
-        <local:OutlineText Margin="0,5"></local:OutlineText>
-        <Slider Name="FontSizeSlider" Minimum="360" Maximum="420" Value="400"  HorizontalAlignment="Left" Margin="328,40,0,0" VerticalAlignment="Top" Width="141"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="328,10,0,0" TextWrapping="Wrap" Text="FontSize" VerticalAlignment="Top" Width="120"/>
+        <Grid.RowDefinitions >
+            <RowDefinition Height="40px" />
+            <RowDefinition Height="40px" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Slider Name="fontSizeSlider" Minimum="5" Maximum="100" Value="10" Grid.Row="0" />
+        <TextBox Name="SizeTextBox" Text="{Binding ElementName=fontSizeSlider, Path=Value}" Grid.Row="1"/>
+        <local:OutlineText Grid.Row="2"/>
     </Grid>
 </Window>

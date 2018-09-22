@@ -20,9 +20,18 @@ namespace WpfTextRender
     /// </summary>
     public partial class MainWindow : Window
     {
+        double _fontSize = 400.0;
+        double _strokeWidth = 24.0;
+
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void FontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _fontSize = fontSizeSlider.Value;
+            OutlineText.SetFontSize(_fontSize);
         }
     }
 }
