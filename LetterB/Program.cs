@@ -17,6 +17,7 @@ namespace LetterB
         const int BGRectWidth = 300;
         const int BGRectHeight = 400;
         const int TargetHeight = 300;
+        const int DPI = 96;
 
         static Brush _blackOutline;
         static Brush _redOutline;
@@ -35,11 +36,15 @@ namespace LetterB
             RenderGeometry(drawingContext, new Rect(0, 0, BGRectWidth, BGRectHeight));
             drawingContext.Close();
 
-            RenderTargetBitmap bmp = new RenderTargetBitmap(BGRectWidth, BGRectHeight, 96, 96, PixelFormats.Pbgra32);
+            // System.ArgumentException: Bgr24 not supported :-( Rgb24 not supported :-P
+            // ... so I brute-forced a solution with the ConvertTo24bpp() method
+            //RenderTargetBitmap bmp = new RenderTargetBitmap(BGRectWidth, BGRectHeight, 96, 96, PixelFormats.Bgr24);
+
+            RenderTargetBitmap bmp = new RenderTargetBitmap(BGRectWidth, BGRectHeight, DPI, DPI, PixelFormats.Pbgra32);
             bmp.Render(drawingVisual);
 
             FileStream pngFile = new FileStream("LetterB.png", FileMode.Create);
-            SaveAsPng(bmp, pngFile);
+            SaveAsPng(ConvertTo24bpp(bmp), pngFile);
         }
 
         static void Initialize()
@@ -80,6 +85,37 @@ namespace LetterB
             drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(_blackOutline, _strokeWidth), _textGeometry);
             // the red outline
             drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(_redOutline, _strokeWidth / 3.0), _textGeometry);
+        }
+
+        // brute force ftw! :-/
+        static BitmapSource ConvertTo24bpp(RenderTargetBitmap img)
+        {
+            byte[] srcPixelData = new byte[img.PixelWidth * img.PixelHeight * 4];
+            byte[] destPixelData = new byte[img.PixelWidth * img.PixelHeight * 3];
+            img.CopyPixels(srcPixelData, img.PixelWidth * 4, 0);
+            int srcIndex = 0;
+            int destIndex = 0;
+            for (int i = 0; i < img.PixelWidth; ++i)
+            {
+                for (int j = 0; j < img.PixelHeight; ++j)
+                {
+                    destPixelData[destIndex + 2] = srcPixelData[srcIndex];
+                    destPixelData[destIndex + 1]= srcPixelData[srcIndex + 1];
+                    destPixelData[destIndex] = srcPixelData[srcIndex + 2];
+                    destIndex += 3;
+                    srcIndex += 4; // skip the alpha channel
+                }
+            }
+            var bmp = BitmapSource.Create(
+                img.PixelWidth,
+                img.PixelHeight,
+                DPI, DPI,
+                PixelFormats.Rgb24,
+                null, 
+                destPixelData, 
+                img.PixelWidth * 3);
+
+            return bmp;
         }
 
         static void SaveAsPng(BitmapSource src, Stream outputStream)
