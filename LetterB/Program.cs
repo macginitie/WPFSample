@@ -11,65 +11,76 @@ namespace LetterB
 {
     class Program
     {
-        const double FontSize = 400.0;
-        const double StrokeWidth = 24.0;
+        // this value can be arbitrarily chosen, given the rest of this code
+        const double FontSize = 300.0;
+        
+        const int BGRectWidth = 300;
+        const int BGRectHeight = 400;
+        const int TargetHeight = 300;
+
+        static Brush _blackOutline;
+        static Brush _redOutline;
+        static double _strokeWidth;
+        static FormattedText _text;
         static Geometry _textGeometry;
 
         static void Main(string[] args)
         {
-            FormattedText text = new FormattedText("B",
-                new CultureInfo("en-us"),
-                FlowDirection.LeftToRight,
-                new Typeface(new FontFamily("Arial"), FontStyles.Normal, FontWeights.Normal, new FontStretch()),
-                FontSize,
-                System.Windows.Media.Brushes.Black // This brush does not matter since we use the geometry of the text.
-                );
-
-            // Build the geometry object that represents the text.
-            _textGeometry = text.BuildGeometry(new System.Windows.Point(0, 0));
+            Initialize();
+            CreateGeometry();
 
             DrawingVisual drawingVisual = new DrawingVisual();
             DrawingContext drawingContext = drawingVisual.RenderOpen();
 
-            RenderGeometry(drawingContext);
+            RenderGeometry(drawingContext, new Rect(0, 0, BGRectWidth, BGRectHeight));
             drawingContext.Close();
 
-            RenderTargetBitmap bmp = new RenderTargetBitmap(300, 400, 96, 96, PixelFormats.Pbgra32);
+            RenderTargetBitmap bmp = new RenderTargetBitmap(BGRectWidth, BGRectHeight, 96, 96, PixelFormats.Pbgra32);
             bmp.Render(drawingVisual);
 
             FileStream pngFile = new FileStream("LetterB.png", FileMode.Create);
             SaveAsPng(bmp, pngFile);
         }
 
-        static void RenderGeometry(DrawingContext drawingContext)
+        static void Initialize()
         {
+            _strokeWidth = TargetHeight * 0.09; // so it will be about 3% after dividing by 3
             // the black outline
-            Brush Stroke = new SolidColorBrush(Color.FromRgb(0x00, 0x00, 0x00));
-            Brush Fill = new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));
-            drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(Stroke, StrokeWidth), _textGeometry);
+            _blackOutline = new SolidColorBrush(Color.FromRgb(0x00, 0x00, 0x00));
             // the red outline
-            Stroke = new SolidColorBrush(Color.FromRgb(0xff, 0x00, 0x00));
-            drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(Stroke, StrokeWidth / 3.0), _textGeometry);
+            _redOutline = new SolidColorBrush(Color.FromRgb(0xff, 0x00, 0x00));
+
+            _text = new FormattedText(
+                "B",
+                new CultureInfo("en-us"),
+                FlowDirection.LeftToRight,
+                new Typeface(new FontFamily("Arial"), FontStyles.Normal, FontWeights.Normal, new FontStretch()),
+                FontSize,
+                System.Windows.Media.Brushes.Black // This brush does not matter since we use the geometry of the text.
+            );
         }
 
-        //public static RenderTargetBitmap GetImage(Control view)
-        //{
-        //    Size size = new Size(view.ActualWidth, view.ActualHeight);
-        //    if (size.IsEmpty)
-        //        return null;
+        static void CreateGeometry()
+        {
+            // Build the geometry object that represents the text, offset to 10,10
+            _textGeometry = _text.BuildGeometry(new System.Windows.Point(0,0));
+            // try to fit exactly 300px height requirement as illustrated in the spec...
+            double scaleXY = 300.0 / _textGeometry.GetWidenedPathGeometry(new Pen(_blackOutline, _strokeWidth)).Bounds.Height;
+            // but the result was 295px, so:
+            double ff = 0.025; // fudge factor
+            _textGeometry.Transform = new ScaleTransform(scaleXY+ff, scaleXY+ff);
+        }
 
-        //    RenderTargetBitmap result = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32);
-
-        //    DrawingVisual drawingvisual = new DrawingVisual();
-        //    using (DrawingContext context = drawingvisual.RenderOpen())
-        //    {
-        //        context.DrawRectangle(new VisualBrush(view), null, new Rect(new Point(), size));
-        //        context.Close();
-        //    }
-
-        //    result.Render(drawingvisual);
-        //    return result;
-        //}
+        static void RenderGeometry(DrawingContext drawingContext, Rect bgRect)
+        {
+            Brush Fill = new SolidColorBrush(Color.FromRgb(0xff, 0xff, 0xff));
+            // 1st fill the background
+            drawingContext.DrawRectangle(Fill, null, bgRect);
+            // the black outline
+            drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(_blackOutline, _strokeWidth), _textGeometry);
+            // the red outline
+            drawingContext.DrawGeometry(Fill, new System.Windows.Media.Pen(_redOutline, _strokeWidth / 3.0), _textGeometry);
+        }
 
         static void SaveAsPng(BitmapSource src, Stream outputStream)
         {
